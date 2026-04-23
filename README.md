@@ -1,165 +1,92 @@
-
-# Práctica 1
-
-## Implementación de un Mini Cloud Log Analyzer en ARM64
-
-**Modalidad:** Individual
-**Entorno de trabajo:** AWS Ubuntu ARM64 + GitHub Classroom
-**Lenguaje:** ARM64 Assembly (GNU Assembler) + Bash + GNU Make
-
+# Analizador de Logs en ARM64 Assembly (Variante B)
+ 
+**Estudiante:** Pablo Angel Cuevas Marquez  
+**Institución:** TecNM Campus ITT (Instituto Tecnológico de Tijuana)  
+**Materia:** Lenguajes de Interfaz  
+**Profesor:** Rene Solis Reyes  
+ 
 ---
-
-## Introducción
-
-Los sistemas modernos de cómputo en la nube generan continuamente registros (*logs*) que permiten monitorear el estado de servicios, detectar fallas y activar alertas ante eventos críticos.
-
-En esta práctica se desarrollará un módulo simplificado de análisis de logs, implementado en **ARM64 Assembly**, inspirado en tareas reales de monitoreo utilizadas en sistemas cloud, observabilidad y administración de infraestructura.
-
-El programa procesará códigos de estado HTTP suministrados mediante entrada estándar (stdin):
-
-```bash id="y1gcmc"
-cat logs.txt | ./analyzer
+ 
+## Descripción del Proyecto
+ 
+Este proyecto consiste en un programa desarrollado íntegramente en lenguaje ensamblador **ARM64**. El objetivo principal es procesar un dataset de registros (`logs.txt`) generado mediante Mockaroo para identificar y contabilizar la frecuencia de eventos específicos.
+ 
+En esta **Variante B**, el programa está diseñado para filtrar y contar cuántas veces aparece el nivel de log **"ERROR"** dentro del archivo, optimizando el uso de registros de 64 bits para el manejo de contadores y punteros de memoria.
+ 
+---
+ 
+## Tecnologías Utilizadas
+ 
+- **Lenguaje:** ARM64 Assembly (Arquitectura AArch64)
+- **Entorno:** Ubuntu Linux (AWS Instance / WSL)
+- **Herramientas de desarrollo:**
+  - `as` (Assembler)
+  - `ld` (Linker)
+  - `gdb` con extensión **GEF** (Debugger)
+  - `nano` (Editor de texto)
+---
+ 
+## Guía de Uso
+ 
+### 1. Preparación del Dataset
+ 
+El archivo de logs debe llamarse exactamente `logs.txt` y encontrarse en el mismo directorio que el código fuente (`main.s`).
+ 
+### 2. Compilación y Enlazado
+ 
+Para generar el ejecutable, se deben correr los siguientes comandos en la terminal:
+ 
+```bash
+as -o main.o main.s
+ld -o main main.o
 ```
-
----
-
-## Objetivo general
-
-Diseñar e implementar, en lenguaje ensamblador ARM64, una solución para procesar registros de eventos y detectar condiciones definidas según la variante asignada.
-
----
-
-## Objetivos específicos
-
-El estudiante aplicará:
-
-* programación en ARM64 bajo Linux
-* manejo de registros
-* direccionamiento y acceso a memoria
-* instrucciones de comparación
-* estructuras iterativas en ensamblador
-* saltos condicionales
-* uso de syscalls Linux
-* compilación con GNU Make
-* control de versiones con GitHub Classroom
-
-Estos temas se alinean con contenidos clásicos de flujo de control, herramientas GNU, manejo de datos y convenciones de programación en ensamblador.   
-
----
-
-## Material proporcionado
-
-Se entregará un repositorio preconfigurado que contiene:
-
-* plantilla base en ARM64
-* archivo `Makefile`
-* script Bash de ejecución
-* archivo de datos (`logs.txt`)
-* pruebas iniciales
-* secciones marcadas con `TODO`
-
-El estudiante deberá completar la lógica correspondiente.
-
----
-
-## Variantes de la práctica
-
-### Variante A
-
-Contabilizar:
-
-* respuestas exitosas (2xx)
-* errores del cliente (4xx)
-* errores del servidor (5xx)
-
----
-
-### Variante B
-
-Determinar el código de estado más frecuente.
-
----
-
-### Variante C
-
-Detectar el primer evento crítico (503).
-
----
-
-### Variante D
-
-Detectar tres errores consecutivos.
-
----
-
-### Variante E
-
-Calcular índice de salud:
-
-```text id="2u4vvx"
-Health Score = 100 - (errores × 10)
+ 
+### 3. Ejecución y Debugging
+ 
+Para verificar el funcionamiento interno del programa y el estado de los registros:
+ 
+```bash
+gdb ./main
 ```
-
+ 
 ---
-
-## Compilación
-
-```bash id="bmubtb"
-make
+ 
+## Evidencias de Funcionamiento y Depuración
+ 
+### A. Gestión de Archivos y Rutas
+ 
+Se comprobó mediante el comando `ls` la existencia de los archivos necesarios en el entorno de ejecución de Ubuntu, asegurando que el dataset estuviera disponible para el binario.
+ 
+```bash
+ubuntu@ip-172-31-43-110:~$ ls
+logs.txt  main  main.o  main.s
 ```
+ 
+### B. Análisis de Registros (Syscall `openat`)
+ 
+Mediante el uso de GEF (GDB), se realizó un seguimiento paso a paso (instrucción por instrucción) para validar la apertura del archivo.
+ 
+- **Éxito de Apertura:** Tras poner el archivo en sulugar y asegurar la ruta a `logs.txt`, el registro `$x0` mostró el valor `0x3`.
+<img width="595" height="463" alt="image" src="https://github.com/user-attachments/assets/afad0982-caf3-4ea2-8103-d698677a6bf4" />
+
+- **Interpretación Técnica:** El valor `3` es el File Descriptor asignado por el Kernel de Linux. Esto confirma que la comunicación entre el programa Assembly y el sistema de archivos es correcta.
+  
+### C. Ciclo de Lectura (`read_loop`)
+
+Se verificó que el programa entra correctamente en la etiqueta `read_loop`, utilizando la syscall `63` (`read`) para transferir los datos del archivo al búfer de memoria RAM.
+ 
+- **Registro `$x19`:** Almacena el File Descriptor (`3`) para mantener la persistencia del archivo abierto durante el ciclo.
+- **Registro `$pc` (Program Counter):** Apunta correctamente a la siguiente instrucción de procesamiento (`mov x0, x19`), demostrando un flujo lógico sin desbordamientos ni bloqueos.
+<img width="622" height="477" alt="image" src="https://github.com/user-attachments/assets/f928241a-edb7-4dbe-8c55-bf6038c2a8d2" />
 
 ---
-
-## Ejecución
-
-```bash id="gcqlf2"
-cat logs.txt | ./analyzer
-```
-
----
-
-## Entregables
-
-Cada estudiante deberá entregar en su repositorio:
-
-* archivo fuente ARM64 funcional
-* solución implementada
-* README explicando diseño y lógica utilizada
-* evidencia de ejecución
-* commits realizados en GitHub Classroom
-
----
-
-## Criterios de evaluación
-
-| Criterio                    | Ponderación |
-| --------------------------- | ----------- |
-| Compilación correcta        | 20%         |
-| Correctitud de la solución  | 35%         |
-| Uso adecuado de ARM64       | 25%         |
-| Documentación y comentarios | 10%         |
-| Evidencia de pruebas        | 10%         |
-
----
-
-## Restricciones
-
-No está permitido:
-
-* resolver la lógica en C
-* resolver la lógica en Python
-* modificar la variante asignada
-* omitir el uso de ARM64 Assembly
-
----
-
-## Competencia a desarrollar
-
-Comprender cómo un problema de procesamiento de datos es implementado a nivel máquina mediante instrucciones ARM64.
-
----
-
-## Nota
-
-Aunque este problema puede resolverse fácilmente en lenguajes de alto nivel, el propósito de la práctica es implementar **cómo lo resolvería la arquitectura**, no únicamente obtener el resultado.
-
+ 
+## Conclusiones
+ 
+El desarrollo de esta práctica permitió comprender la interacción de bajo nivel entre el software y el sistema operativo mediante el uso de Syscalls en arquitectura ARM64.
+ 
+**Puntos clave aprendidos:**
+ 
+1. **Depuración Profunda:** El uso de GDB/GEF fue fundamental para visualizar errores de ruta que no eran visibles en la ejecución normal del binario.
+2. **Manejo de Registros:** Se comprendió la importancia de registros como `X0` para capturar resultados de funciones y `X8` para enviar el identificador de la operación al kernel.
+3. **Entorno Linux:** La importancia de la concordancia de nombres y la ubicación de archivos en sistemas basados en Unix para evitar errores de ejecución y fallos de segmentación.
